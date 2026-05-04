@@ -21,6 +21,11 @@ ModernOculus requires [Embeddium](https://modrinth.com/mod/embeddium) for good p
 
 * Backwards compatibility. All existing ShadersMod / OptiFine shader packs should just work on ModernOculus, without any modifications required.
 
+## Contributors
+<a href="https://github.com/CipherXOR/ModernOculus/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Asek3/Oculus" />
+</a>
+
 ## License
 
 This project is licensed under the [LGPL-3.0](LICENSE) license.
