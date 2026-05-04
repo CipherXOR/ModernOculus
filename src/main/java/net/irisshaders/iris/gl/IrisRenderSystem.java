@@ -196,6 +196,14 @@ public class IrisRenderSystem {
 		return GL32C.glGetActiveUniform(program, index, size, type, name);
 	}
 
+	public static int getActiveUniformType(int program, int index) {
+		RenderSystem.assertOnRenderThreadOrInit();
+		java.nio.IntBuffer size = org.lwjgl.BufferUtils.createIntBuffer(1);
+		java.nio.IntBuffer type = org.lwjgl.BufferUtils.createIntBuffer(1);
+		GL32C.glGetActiveUniform(program, index, size, type);
+		return type.get(0);
+	}
+
 	public static void readPixels(int x, int y, int width, int height, int format, int type, float[] pixels) {
 		RenderSystem.assertOnRenderThreadOrInit();
 		GL32C.glReadPixels(x, y, width, height, format, type, pixels);

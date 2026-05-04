@@ -1,17 +1,17 @@
 modLoader="javafml"
 loaderVersion="*"
-issueTrackerURL="https://github.com/Asek3/Oculus/issues"
+issueTrackerURL="https://github.com/CipherXOR/ModernOculus/issues"
 license="LGPL-3.0-only"
 
 [[mods]]
 modId="oculus"
 version="${version}"
-displayURL = "https://curseforge.com/minecraft/mc-mods/oculus"
-displayName="Oculus"
+displayURL = "https://github.com/CipherXOR/ModernOculus"
+displayName="ModernOculus"
 logoFile="oculus-logo.png"
-authors="NanoLive, dima_dencep, coderbot, IMS212, Justsnoopy30, FoundationGames"
+authors="CipherXOR, NanoLive, dima_dencep, coderbot, IMS212, Justsnoopy30, FoundationGames"
 description='''
-Unofficial Fork of "Iris", made to work with FML
+ModernOculus is a community fork of Oculus, which is an unofficial Forge port of Iris Shaders.
 '''
 provides = ["iris"]
 

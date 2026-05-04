@@ -11,10 +11,7 @@ public class Vector3IntegerUniform extends Uniform {
 	private final Supplier<Vector3i> value;
 
 	Vector3IntegerUniform(int location, Supplier<Vector3i> value) {
-		super(location);
-
-		this.cachedValue = new Vector3i();
-		this.value = value;
+		this(location, value, null);
 	}
 
 	Vector3IntegerUniform(int location, Supplier<Vector3i> value, ValueUpdateNotifier notifier) {

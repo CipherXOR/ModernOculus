@@ -13,10 +13,7 @@ public class Vector3Uniform extends Uniform {
 	private final Supplier<Vector3f> value;
 
 	Vector3Uniform(int location, Supplier<Vector3f> value) {
-		super(location);
-
-		this.cachedValue = new Vector3f();
-		this.value = value;
+		this(location, value, null);
 	}
 
 	Vector3Uniform(int location, Supplier<Vector3f> value, ValueUpdateNotifier notifier) {

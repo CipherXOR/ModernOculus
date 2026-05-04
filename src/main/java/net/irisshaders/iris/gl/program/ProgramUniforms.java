@@ -12,12 +12,10 @@ import net.irisshaders.iris.gl.uniform.UniformType;
 import net.irisshaders.iris.gl.uniform.UniformUpdateFrequency;
 import net.irisshaders.iris.uniforms.SystemTimeUniforms;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.ARBShaderImageLoadStore;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
 
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -225,7 +223,6 @@ public class ProgramUniforms {
 			updateStage(perTick);
 		}
 
-		// TODO: Move the frame counter to a different place?
 		int currentFrame = SystemTimeUniforms.COUNTER.getAsInt();
 
 		if (lastFrame != currentFrame) {
@@ -310,47 +307,43 @@ public class ProgramUniforms {
 		}
 
 		public ProgramUniforms buildUniforms() {
-			// Check for any unsupported uniforms and warn about them so that we can easily figure out what uniforms we
-			// need to add.
 			int activeUniforms = GlStateManager.glGetProgrami(program, GL20C.GL_ACTIVE_UNIFORMS);
-			IntBuffer sizeBuf = BufferUtils.createIntBuffer(1);
-			IntBuffer typeBuf = BufferUtils.createIntBuffer(1);
+			java.nio.IntBuffer size = org.lwjgl.BufferUtils.createIntBuffer(1);
+			java.nio.IntBuffer type = org.lwjgl.BufferUtils.createIntBuffer(1);
 
 			for (int index = 0; index < activeUniforms; index++) {
-				String name = IrisRenderSystem.getActiveUniform(program, index, 128, sizeBuf, typeBuf);
+				String name = IrisRenderSystem.getActiveUniform(program, index, 128, size, type);
 
 				if (name.isEmpty()) {
-					// No further information available.
 					continue;
 				}
 
-				int size = sizeBuf.get(0);
-				int type = typeBuf.get(0);
+				int uniformType = type.get(0);
 
-				UniformType provided = uniformNames.get(name);
-				UniformType expected = getExpectedType(type);
+			UniformType provided = uniformNames.get(name);
+			UniformType expected = getExpectedType(uniformType);
 
-				if (provided != null && provided != expected) {
-					String expectedName;
+			if (provided != null && provided != expected) {
+				String expectedName;
 
-					if (expected != null) {
-						expectedName = expected.toString();
-					} else {
-						expectedName = "(unsupported type: " + getTypeName(type) + ")";
-					}
-
-					Iris.logger.error("[" + this.name + "] Wrong uniform type for " + name + ": Iris is providing " + provided + " but the program expects " + expectedName + ". Disabling that uniform.");
-
-					once.remove(name);
-					perTick.remove(name);
-					perFrame.remove(name);
-					dynamic.remove(name);
+				if (expected != null) {
+					expectedName = expected.toString();
+				} else {
+					expectedName = "(unsupported type: " + getTypeName(uniformType) + ")";
 				}
-			}
 
-			return new ProgramUniforms(ImmutableList.copyOf(once.values()), ImmutableList.copyOf(perTick.values()), ImmutableList.copyOf(perFrame.values()),
-				ImmutableList.copyOf(dynamic.values()), ImmutableList.copyOf(notifiersToReset));
+				Iris.logger.error("[" + this.name + "] Wrong uniform type for " + name + ": Iris is providing " + provided + " but the program expects " + expectedName + ". Disabling that uniform.");
+
+				once.remove(name);
+				perTick.remove(name);
+				perFrame.remove(name);
+				dynamic.remove(name);
+			}
 		}
+
+		return new ProgramUniforms(ImmutableList.copyOf(once.values()), ImmutableList.copyOf(perTick.values()), ImmutableList.copyOf(perFrame.values()),
+			ImmutableList.copyOf(dynamic.values()), ImmutableList.copyOf(notifiersToReset));
+	}
 
 		@Override
 		public Builder addDynamicUniform(Uniform uniform, ValueUpdateNotifier notifier) {
