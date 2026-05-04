@@ -47,14 +47,26 @@ public class MixinMinecraft_PipelineManagement {
 	private void iris$resetPipeline(@Nullable ClientLevel level, CallbackInfo ci) {
 		if (Iris.getCurrentDimension() != Iris.lastDimension) {
 			Iris.logger.info("Reloading pipeline on dimension change: " + Iris.lastDimension + " => " + Iris.getCurrentDimension());
+
+			Iris.handleDimensionShaderSwitch(Iris.getCurrentDimension());
+
 			// Destroy pipelines when changing dimensions.
 			Iris.getPipelineManager().destroyPipeline();
+
+			Iris.loadShaderpack(Iris.getCurrentDimension());
 
 			// NB: We need create the pipeline immediately, so that it is ready by the time that Sodium starts trying to
 			// initialize its world renderer.
 			if (level != null) {
 				Iris.getPipelineManager().preparePipeline(Iris.getCurrentDimension());
 			}
+		} else if (level != null && Iris.lastDimension == null) {
+			// First join into a world - apply dimension shader config with highest priority
+			Iris.applyDimensionShaderOnJoin();
+			Iris.getPipelineManager().destroyPipeline();
+			Iris.loadShaderpack(Iris.getCurrentDimension());
+			Iris.getPipelineManager().preparePipeline(Iris.getCurrentDimension());
+			Iris.lastDimension = Iris.getCurrentDimension();
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package net.irisshaders.iris.pathways;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.model.data.ModelData;
@@ -14,7 +15,6 @@ import net.irisshaders.iris.uniforms.CapturedRenderingState;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -23,7 +23,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.GameType;
-import org.joml.Matrix4f;
 
 public class HandRenderer {
 	public static final HandRenderer INSTANCE = new HandRenderer();
@@ -52,12 +51,12 @@ public class HandRenderer {
 
 	private boolean canRender(Camera camera, GameRenderer gameRenderer) {
 		return !(!((GameRendererAccessor) gameRenderer).getRenderHand()
-			|| camera.isDetached()
-			|| !(camera.getEntity() instanceof Player)
-			|| ((GameRendererAccessor) gameRenderer).getPanoramicMode()
-			|| Minecraft.getInstance().options.hideGui
-			|| (camera.getEntity() instanceof LivingEntity && ((LivingEntity) camera.getEntity()).isSleeping())
-			|| Minecraft.getInstance().gameMode.getPlayerMode() == GameType.SPECTATOR);
+				|| camera.isDetached()
+				|| !(camera.getEntity() instanceof Player)
+				|| ((GameRendererAccessor) gameRenderer).getPanoramicMode()
+				|| Minecraft.getInstance().options.hideGui
+				|| (camera.getEntity() instanceof LivingEntity && ((LivingEntity) camera.getEntity()).isSleeping())
+				|| Minecraft.getInstance().gameMode.getPlayerMode() == GameType.SPECTATOR);
 	}
 
 	public boolean isHandTranslucent(InteractionHand hand) {
@@ -78,6 +77,10 @@ public class HandRenderer {
 
 	public void renderSolid(PoseStack poseStack, float tickDelta, Camera camera, GameRenderer gameRenderer, WorldRenderingPipeline pipeline) {
 		if (!canRender(camera, gameRenderer) || !IrisApi.getInstance().isShaderPackInUse()) {
+			return;
+		}
+
+		if (!(camera.getEntity() instanceof LocalPlayer)) {
 			return;
 		}
 
@@ -113,6 +116,10 @@ public class HandRenderer {
 
 	public void renderTranslucent(PoseStack poseStack, float tickDelta, Camera camera, GameRenderer gameRenderer, WorldRenderingPipeline pipeline) {
 		if (!canRender(camera, gameRenderer) || !isAnyHandTranslucent() || !IrisApi.getInstance().isShaderPackInUse()) {
+			return;
+		}
+
+		if (!(camera.getEntity() instanceof LocalPlayer)) {
 			return;
 		}
 

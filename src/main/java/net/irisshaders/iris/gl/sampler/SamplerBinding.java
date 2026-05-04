@@ -12,16 +12,14 @@ public class SamplerBinding {
 	private final ValueUpdateNotifier notifier;
 	private final TextureType textureType;
 	private final int sampler;
-	private int cachedTextureId;
 
-	public SamplerBinding(TextureType type, int textureUnit, IntSupplier texture, GlSampler sampler, ValueUpdateNotifier notifier) {
+    public SamplerBinding(TextureType type, int textureUnit, IntSupplier texture, GlSampler sampler, ValueUpdateNotifier notifier) {
 		this.textureType = type;
 		this.textureUnit = textureUnit;
 		this.texture = texture;
 		this.sampler = sampler == null ? 0 : sampler.getId();
 		this.notifier = notifier;
-		this.cachedTextureId = -1;
-	}
+    }
 
 	public void update() {
 		updateSampler();
@@ -32,11 +30,7 @@ public class SamplerBinding {
 	}
 
 	private void updateSampler() {
-		int currentId = texture.getAsInt();
-		if (cachedTextureId != currentId) {
-			cachedTextureId = currentId;
-			IrisRenderSystem.bindSamplerToUnit(textureUnit, sampler);
-			IrisRenderSystem.bindTextureToUnit(textureType.getGlType(), textureUnit, currentId);
-		}
+		IrisRenderSystem.bindSamplerToUnit(textureUnit, sampler);
+		IrisRenderSystem.bindTextureToUnit(textureType.getGlType(), textureUnit, texture.getAsInt());
 	}
 }

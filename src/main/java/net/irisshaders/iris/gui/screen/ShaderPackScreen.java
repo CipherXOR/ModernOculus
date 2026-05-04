@@ -273,6 +273,19 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 			this.addRenderableWidget(showHideButton);
 		}
 
+		OldImageButton dimensionConfigButton = new OldImageButton(
+			this.width - 28, 4,
+			20, 20,
+			0, 106, 20,
+			GuiUtil.IRIS_WIDGETS_TEX,
+			256, 256,
+			(button) -> this.minecraft.setScreen(new DimensionShaderScreen(this)),
+			Component.translatable("options.iris.dimensionShader.config")
+		);
+		dimensionConfigButton.setTooltip(Tooltip.create(Component.translatable("options.iris.dimensionShader.config")));
+		dimensionConfigButton.setTooltipDelay(10);
+		this.addRenderableWidget(dimensionConfigButton);
+
 		// NB: Don't let comment remain when exiting options screen
 		// https://github.com/IrisShaders/Iris/issues/1494
 		this.hoveredElement = null;

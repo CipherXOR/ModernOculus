@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GlDebug;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.sun.jna.platform.unix.LibC;
 import net.irisshaders.iris.compat.dh.DHCompat;
+import net.irisshaders.iris.config.DimensionShaderConfig;
 import net.irisshaders.iris.config.IrisConfig;
 import net.irisshaders.iris.gl.GLDebug;
 import net.irisshaders.iris.gl.shader.ShaderCompileException;
@@ -48,6 +49,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.loading.LoadingModList;
 import net.minecraftforge.network.NetworkConstants;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.Configuration;
 
@@ -93,6 +95,7 @@ public class Iris {
 	private static boolean initialized;
 	private static PipelineManager pipelineManager;
 	private static IrisConfig irisConfig;
+	private static DimensionShaderConfig dimensionShaderConfig;
 	private static FileSystem zipFileSystem;
 
 	private static KeyMapping reloadKeybind;
@@ -179,6 +182,7 @@ public class Iris {
 		// See: https://github.com/IrisShaders/Iris/issues/323
 		lastDimension = DimensionId.OVERWORLD;
 		Iris.getPipelineManager().preparePipeline(DimensionId.OVERWORLD);
+		applyDimensionShaderOnJoin();
 	}
 
 	public static void handleKeybinds(Minecraft minecraft) {
@@ -233,6 +237,10 @@ public class Iris {
 	}
 
 	public static void loadShaderpack() {
+		loadShaderpack(null);
+	}
+
+	public static void loadShaderpack(@Nullable NamespacedId currentDimension) {
 		if (irisConfig == null) {
 			if (!initialized) {
 				throw new IllegalStateException("Iris::loadShaderpack was called, but Iris::onInitializeClient wasn't" +
@@ -250,8 +258,24 @@ public class Iris {
 			return;
 		}
 
+		// Dimension shader config takes highest priority
+		String shaderToLoad = null;
+		if (currentDimension != null && dimensionShaderConfig != null) {
+			String dimensionIdStr = currentDimension.getNamespace() + ":" + currentDimension.getName();
+			Optional<String> configuredShader = dimensionShaderConfig.getShaderForDimension(dimensionIdStr);
+			if (configuredShader.isPresent()) {
+				shaderToLoad = configuredShader.get();
+				logger.info("Dimension shader config override: loading '{}' for dimension {}", shaderToLoad, dimensionIdStr);
+			}
+		}
+
 		// Attempt to load an external shaderpack if it is available
-		Optional<String> externalName = irisConfig.getShaderPackName();
+		Optional<String> externalName;
+		if (shaderToLoad != null) {
+			externalName = Optional.of(shaderToLoad);
+		} else {
+			externalName = irisConfig.getShaderPackName();
+		}
 
 		if (externalName.isEmpty()) {
 			logger.info("Shaders are disabled because no valid shaderpack is selected");
@@ -575,6 +599,55 @@ public class Iris {
 		}
 	}
 
+	public static void handleDimensionShaderSwitch(NamespacedId dimensionId) {
+		if (dimensionShaderConfig == null) {
+			return;
+		}
+
+		String dimensionIdStr = dimensionId.getNamespace() + ":" + dimensionId.getName();
+		Optional<String> configuredShader = dimensionShaderConfig.getShaderForDimension(dimensionIdStr);
+
+		if (configuredShader.isPresent()) {
+			String targetShader = configuredShader.get();
+			String currentShader = irisConfig.getShaderPackName().orElse("");
+
+			if (!targetShader.equals(currentShader)) {
+				logger.info("Dimension shader switch: changing from '{}' to '{}' for dimension {}", currentShader, targetShader, dimensionIdStr);
+				irisConfig.setShaderPackName(targetShader);
+				try {
+					irisConfig.save();
+				} catch (IOException e) {
+					logger.error("Failed to save config during dimension shader switch", e);
+				}
+			}
+		}
+	}
+
+	public static void applyDimensionShaderOnJoin() {
+		NamespacedId dimension = getCurrentDimension();
+		if (dimension == null || dimensionShaderConfig == null) {
+			return;
+		}
+
+		String dimensionIdStr = dimension.getNamespace() + ":" + dimension.getName();
+		Optional<String> configuredShader = dimensionShaderConfig.getShaderForDimension(dimensionIdStr);
+
+		if (configuredShader.isPresent()) {
+			String targetShader = configuredShader.get();
+			String currentShader = irisConfig.getShaderPackName().orElse("");
+
+			if (!targetShader.equals(currentShader)) {
+				logger.info("Applying dimension shader on join: changing from '{}' to '{}' for dimension {}", currentShader, targetShader, dimensionIdStr);
+				irisConfig.setShaderPackName(targetShader);
+				try {
+					irisConfig.save();
+				} catch (IOException e) {
+					logger.error("Failed to save config during dimension shader join apply", e);
+				}
+			}
+		}
+	}
+
 	/**
 	 * Destroys and deallocates all created OpenGL resources. Useful as part of a reload.
 	 */
@@ -680,6 +753,10 @@ public class Iris {
 		return irisConfig;
 	}
 
+	public static DimensionShaderConfig getDimensionShaderConfig() {
+		return dimensionShaderConfig;
+	}
+
 	public static boolean isFallback() {
 		return fallback;
 	}
@@ -772,11 +849,19 @@ public class Iris {
 		}
 
 		irisConfig = new IrisConfig(FMLPaths.CONFIGDIR.get().resolve(MODID + ".properties"));
+		dimensionShaderConfig = new DimensionShaderConfig(FMLPaths.CONFIGDIR.get().resolve(MODID + "-dimension-shaders.json"));
 
 		try {
 			irisConfig.initialize();
 		} catch (IOException e) {
 			logger.error("Failed to initialize Iris configuration, default values will be used instead");
+			logger.error("", e);
+		}
+
+		try {
+			dimensionShaderConfig.load();
+		} catch (IOException e) {
+			logger.error("Failed to load dimension shader configuration");
 			logger.error("", e);
 		}
 
