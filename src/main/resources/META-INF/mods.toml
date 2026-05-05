@@ -16,10 +16,44 @@ ModernOculus is a community fork of Oculus, which is an unofficial Forge port of
 provides = ["iris"]
 side = "CLIENT"
 
+[[mixins]]
+config="mixins.oculus.json"
+
+[[mixins]]
+config="mixins.oculus.fantastic.json"
+
+[[mixins]]
+config="mixins.oculus.vertexformat.json"
+
+[[mixins]]
+config="mixins.oculus.bettermipmaps.json"
+
+[[mixins]]
+config="mixins.oculus.fixes.maxfpscrash.json"
+
+[[mixins]]
+config="oculus-batched-entity-rendering.mixins.json"
+
+[[mixins]]
+config="mixins.oculus.compat.sodium.json"
+
+[[mixins]]
+config="mixins.oculus.compat.indigo.json"
+
+[[mixins]]
+config="mixins.oculus.compat.indium.json"
+
+[[mixins]]
+config="mixins.oculus.compat.dh.json"
+
+[[mixins]]
+config="mixins.oculus.compat.pixelmon.json"
+
 [mods."sodium:options"]
 "mixin.features.render.world.sky"=false
 "mixin.features.render.entity"=false
 "mixin.features.render.gui.font"=false
+"mixin.features.render.gui.debug"=false
 
 [[dependencies.oculus]]
 modId = "minecraft"

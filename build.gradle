@@ -10,19 +10,17 @@ loom {
 
 	forge {
 		convertAccessWideners = true
-		mixinConfigs = [
-				"mixins.oculus.json",
-				"mixins.oculus.fantastic.json",
-				"mixins.oculus.vertexformat.json",
-				"mixins.oculus.bettermipmaps.json",
-				"mixins.oculus.fixes.maxfpscrash.json",
-				"oculus-batched-entity-rendering.mixins.json",
-				"mixins.oculus.compat.sodium.json",
-				"mixins.oculus.compat.indigo.json",
-				"mixins.oculus.compat.indium.json",
-				"mixins.oculus.compat.dh.json",
-				"mixins.oculus.compat.pixelmon.json"
-		]
+		mixinConfig "mixins.oculus.json"
+		mixinConfig "mixins.oculus.fantastic.json"
+		mixinConfig "mixins.oculus.vertexformat.json"
+		mixinConfig "mixins.oculus.bettermipmaps.json"
+		mixinConfig "mixins.oculus.fixes.maxfpscrash.json"
+		mixinConfig "oculus-batched-entity-rendering.mixins.json"
+		mixinConfig "mixins.oculus.compat.sodium.json"
+		mixinConfig "mixins.oculus.compat.indigo.json"
+		mixinConfig "mixins.oculus.compat.indium.json"
+		mixinConfig "mixins.oculus.compat.dh.json"
+		mixinConfig "mixins.oculus.compat.pixelmon.json"
 	}
 	mixin.defaultRefmapName = "oculus-mixins-refmap.json"
 }
@@ -35,6 +33,18 @@ configurations {
 
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility = JavaVersion.VERSION_17
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+tasks.withType(JavaExec).configureEach {
+	javaLauncher = javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
 
 archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}"
 version = project.mod_version
