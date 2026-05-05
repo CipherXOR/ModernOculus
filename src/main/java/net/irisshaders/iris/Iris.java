@@ -111,6 +111,7 @@ public class Iris {
 	private static boolean fallback;
 	private static boolean loadPackWhenPossible = false;
 	private static boolean renderSystemInit = false;
+	private static Path crashRecoveryFile;
 
 	public Iris() {
 		try {
@@ -176,6 +177,8 @@ public class Iris {
 				" Trying to avoid a crash but this is an odd state.");
 			return;
 		}
+
+		clearCrashRecoveryMarker();
 
 		// Initialize the pipeline now so that we don't increase world loading time. Just going to guess that
 		// the player is in the overworld.
@@ -289,6 +292,12 @@ public class Iris {
 			logger.warn("Falling back to normal rendering without shaders because the shaderpack could not be loaded");
 			setShadersDisabled();
 			fallback = true;
+			irisConfig.setShaderPackName(null);
+			try {
+				irisConfig.save();
+			} catch (IOException ex) {
+				logger.error("Failed to save config after shader load failure", ex);
+			}
 		}
 	}
 
@@ -367,6 +376,7 @@ public class Iris {
 		resetShaderPackOptions = false;
 
 		try {
+			writeCrashRecoveryMarker(name);
 			currentPack = new ShaderPack(shaderPackPath, changedConfigs, StandardMacros.createStandardEnvironmentDefines());
 
 			MutableOptionValues changedConfigsValues = currentPack.getShaderPackOptions().getOptionValues().mutableCopy();
@@ -378,6 +388,7 @@ public class Iris {
 
 			tryUpdateConfigPropertiesFile(shaderPackConfigTxt, configsToSave);
 		} catch (Exception e) {
+			clearCrashRecoveryMarker();
 			logger.error("Failed to load the shaderpack \"{}\"!", name);
 			logger.error("", e);
 
@@ -695,6 +706,7 @@ public class Iris {
 		try {
 			return new IrisRenderingPipeline(programs);
 		} catch (Exception e) {
+			clearCrashRecoveryMarker();
 			if (irisConfig.areDebugOptionsEnabled()) {
 				Minecraft.getInstance().setScreen(new DebugLoadFailedGridScreen(Minecraft.getInstance().screen, Component.literal(e instanceof ShaderCompileException ? "Failed to compile shaders" : "Exception"), e));
 			} else {
@@ -705,8 +717,15 @@ public class Iris {
 				}
 			}
 			logger.error("Failed to create shader rendering pipeline, disabling shaders!", e);
-			// TODO: This should be reverted if a dimension change causes shaders to compile again
 			fallback = true;
+
+			irisConfig.setShadersEnabled(false);
+			irisConfig.setShaderPackName(null);
+			try {
+				irisConfig.save();
+			} catch (IOException ex) {
+				logger.error("Failed to save config after pipeline creation failure", ex);
+			}
 
 			return new VanillaRenderingPipeline();
 		}
@@ -831,6 +850,48 @@ public class Iris {
 	 *
 	 * <p>This is called right before options are loaded, so we can add key bindings here.</p>
 	 */
+	private static Path getCrashRecoveryFile() {
+		if (crashRecoveryFile == null) {
+			crashRecoveryFile = FMLPaths.CONFIGDIR.get().resolve(MODID + "-crash-recovery.txt");
+		}
+		return crashRecoveryFile;
+	}
+
+	private static void writeCrashRecoveryMarker(String shaderPackName) {
+		try {
+			Files.writeString(getCrashRecoveryFile(), shaderPackName);
+		} catch (IOException e) {
+			logger.warn("Failed to write crash recovery marker", e);
+		}
+	}
+
+	private static void clearCrashRecoveryMarker() {
+		try {
+			Files.deleteIfExists(getCrashRecoveryFile());
+		} catch (IOException e) {
+			logger.warn("Failed to clear crash recovery marker", e);
+		}
+	}
+
+	private static boolean checkCrashRecovery() {
+		Path crashFile = getCrashRecoveryFile();
+		if (Files.exists(crashFile)) {
+			try {
+				String crashedPack = Files.readString(crashFile);
+				logger.warn("Detected crash from previous session with shader pack: {}", crashedPack);
+				Files.delete(crashFile);
+				return true;
+			} catch (IOException e) {
+				logger.warn("Failed to read crash recovery file, assuming crash occurred", e);
+				try {
+					Files.deleteIfExists(crashFile);
+				} catch (IOException ignored) {}
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static void onEarlyInitialize() {
 		reloadKeybind = new KeyMapping("iris.keybind.reload", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, "iris.keybinds");
 		toggleShadersKeybind = new KeyMapping("iris.keybind.toggleShaders", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, "iris.keybinds");
@@ -864,6 +925,19 @@ public class Iris {
 			logger.error("Failed to load dimension shader configuration");
 			logger.error("", e);
 		}
+
+		if (checkCrashRecovery()) {
+			logger.warn("Previous shader pack caused a crash, deselecting it");
+			irisConfig.setShadersEnabled(false);
+			irisConfig.setShaderPackName(null);
+			try {
+				irisConfig.save();
+			} catch (IOException ex) {
+				logger.error("Failed to save config after crash recovery", ex);
+			}
+		}
+
+		Runtime.getRuntime().addShutdownHook(new Thread(Iris::clearCrashRecoveryMarker));
 
 		initialized = true;
 	}
