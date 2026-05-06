@@ -23,7 +23,7 @@ ModernOculus requires [Embeddium](https://modrinth.com/mod/embeddium) for good p
 
 ## Contributors
 <a href="https://github.com/CipherXOR/ModernOculus/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Asek3/Oculus" />
+  <img src="https://contrib.rocks/image?repo=CipherXOR/ModernOculus" />
 </a>
 
 ## License
